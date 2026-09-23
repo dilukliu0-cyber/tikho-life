@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Patch Package.swift: swift-tools-version 6.2 -> 6.1, swift-syntax version, trailing commas
 function patchPackageSwift(filePath) {
   if (!fs.existsSync(filePath)) return;
   let c = fs.readFileSync(filePath, 'utf8');
@@ -12,7 +11,6 @@ function patchPackageSwift(filePath) {
   if (c !== o) { fs.writeFileSync(filePath, c, 'utf8'); console.log('[patch] Package.swift:', filePath); }
 }
 
-// Patch RuntimeScheduler.h: remove SWIFT_RETURNS_RETAINED from constructors
 function patchRuntimeScheduler() {
   const f = path.join('node_modules','expo-modules-jsi','apple','Sources','ExpoModulesJSI-Cxx','include','RuntimeScheduler.h');
   if (!fs.existsSync(f)) return;
@@ -22,7 +20,6 @@ function patchRuntimeScheduler() {
   if (c !== o) { fs.writeFileSync(f, c, 'utf8'); console.log('[patch] RuntimeScheduler.h'); }
 }
 
-// Patch all .swift files in expo-modules-jsi: weak let -> weak var, trailing commas in closures
 function patchSwift(dir) {
   if (!fs.existsSync(dir)) return;
   for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -31,15 +28,23 @@ function patchSwift(dir) {
     if (!item.name.endsWith('.swift')) continue;
     let c = fs.readFileSync(full, 'utf8');
     const o = c;
-    // weak let -> weak var (Swift 6.2 allows weak let, 6.1 does not)
-    c = c.replace(/\bweak\s+let\b/g, 'weak var');
-    // trailing commas before ) in function signatures
+
+    // Swift 6.2 allows `weak let`, Swift 6.1 does not.
+    // But `weak var` in a Sendable class is also an error in strict concurrency.
+    // Fix: replace `weak let` with `nonisolated(unsafe) weak var`
+    c = c.replace(/\bweak\s+let\b/g, 'nonisolated(unsafe) weak var');
+
+    // Also fix any already-patched `weak var` that's in a Sendable class (from previous runs)
+    // by adding nonisolated(unsafe) if not already there
+    c = c.replace(/(?<!nonisolated\(unsafe\)\s)weak\s+var\s+(runtime\b)/g, 'nonisolated(unsafe) weak var $1');
+
+    // trailing commas before ) in function/closure type signatures
     c = c.replace(/,(\s*\)\s*(?:async\s+)?(?:throws(?:\([^)]*\))?\s+)?->)/g, '$1');
+
     if (c !== o) { fs.writeFileSync(full, c, 'utf8'); console.log('[patch] Swift:', item.name); }
   }
 }
 
-// Walk all node_modules for Package.swift
 function walkPkg(dir) {
   if (!fs.existsSync(dir)) return;
   for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -49,15 +54,9 @@ function walkPkg(dir) {
   }
 }
 
-// Also patch inside ios/Pods if it exists
-for (const root of ['node_modules', 'ios/Pods']) {
-  walkPkg(root);
-}
+for (const root of ['node_modules', 'ios/Pods']) { walkPkg(root); }
 patchRuntimeScheduler();
 patchSwift(path.join('node_modules', 'expo-modules-jsi'));
-
-// Also patch ios/Pods copy if it exists
 const podsJsi = path.join('ios', 'Pods', 'ExpoModulesJSI');
 if (fs.existsSync(podsJsi)) patchSwift(podsJsi);
-
 console.log('[patch] Done.');
