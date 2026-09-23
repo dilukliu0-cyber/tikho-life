@@ -12,10 +12,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16.2
-        run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app
-          xcodebuild -version
+      - name: Show Xcode version
+        run: xcodebuild -version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -26,18 +24,12 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
-      - name: Patch SwiftPM manifests for Xcode 16.2 Swift 6.0 compatibility
-        run: node scripts/patch-swiftpm.js
-
       - name: Generate iOS native project (Prebuild)
         run: npx expo prebuild --platform ios --clean
 
       - name: Install Pods
         working-directory: ios
         run: pod install
-
-      - name: Re-verify SwiftPM patch after Pods installation
-        run: node scripts/patch-swiftpm.js
 
       - name: Build Xcode Workspace without code signing
         run: |
