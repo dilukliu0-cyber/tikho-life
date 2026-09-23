@@ -12,20 +12,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16.2
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      - name: Check available Xcode versions
+        run: |
+          ls -d /Applications/Xcode*.app || true
 
-      - name: Verify Xcode Version
-        run: xcodebuild -version
+      - name: Select Xcode
+        run: |
+          if [ -d "/Applications/Xcode_16.3.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.3.app
+          elif [ -d "/Applications/Xcode_16.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app
+          else
+            sudo xcode-select -s /Applications/Xcode.app
+          fi
+          xcodebuild -version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci || npm install
+
+      - name: Patch Swift tools version for Xcode compatibility
+        run: |
+          find node_modules -name "Package.swift" -exec sed -i '' 's/swift-tools-version: 6.2/swift-tools-version: 6.0/g' {} +
+          find node_modules -name "Package.swift" -exec sed -i '' 's/602.0.0-latest/600.0.0/g' {} +
 
       - name: Generate iOS native project (Prebuild)
         run: npx expo prebuild --platform ios --clean
