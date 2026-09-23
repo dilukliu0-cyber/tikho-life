@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Тихо",
+    "slug": "tikho-life",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tikho.lifeos"
+    },
+    "plugins": [
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "TodayWidget",
+              "displayName": "Тихо · Сегодня",
+              "description": "Ближайшее дело и прогресс дня",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryRectangular",
+                  "accessoryCircular",
+                  "accessoryInline"
+                ]
+              }
+            },
+            {
+              "name": "SleepWidget",
+              "displayName": "Тихо · Сон",
+              "description": "Последняя запись сна",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "accessoryRectangular",
+                  "accessoryCircular",
+                  "accessoryInline"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "expo-font"
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F8F7F3",
+        "foregroundImage": "./assets/icon.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    }
+  }
+}
