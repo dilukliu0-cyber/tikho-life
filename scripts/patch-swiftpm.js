@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-function patchFile(filePath) {
+function patchPackageSwift(filePath) {
   if (!fs.existsSync(filePath)) return;
   let content = fs.readFileSync(filePath, 'utf8');
   const original = content;
@@ -17,7 +17,30 @@ function patchFile(filePath) {
 
   if (content !== original) {
     fs.writeFileSync(filePath, content, 'utf8');
-    console.log(`[patch-swiftpm] Successfully patched: ${filePath}`);
+    console.log(`[patch] Successfully patched: ${filePath}`);
+  }
+}
+
+function patchRuntimeScheduler() {
+  const filePath = path.join(
+    'node_modules',
+    'expo-modules-jsi',
+    'apple',
+    'Sources',
+    'ExpoModulesJSI-Cxx',
+    'include',
+    'RuntimeScheduler.h'
+  );
+  if (!fs.existsSync(filePath)) return;
+  let content = fs.readFileSync(filePath, 'utf8');
+  const original = content;
+
+  // Remove invalid SWIFT_RETURNS_RETAINED attribute from C++ constructors
+  content = content.replace(/SWIFT_RETURNS_RETAINED\s+RuntimeScheduler/g, 'RuntimeScheduler');
+
+  if (content !== original) {
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`[patch] Successfully patched RuntimeScheduler.h`);
   }
 }
 
@@ -26,12 +49,13 @@ function walk(dir) {
   for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, item.name);
     if (item.isDirectory()) {
-      walk(full);
+      if (item.name !== '.git') walk(full);
     } else if (item.name === 'Package.swift') {
-      patchFile(full);
+      patchPackageSwift(full);
     }
   }
 }
 
 walk('node_modules');
-console.log('[patch-swiftpm] Scan complete.');
+patchRuntimeScheduler();
+console.log('[patch] All patches applied.');
