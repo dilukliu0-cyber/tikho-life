@@ -7,10 +7,16 @@ on:
 
 jobs:
   build-ipa:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Select Xcode 16.2
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+
+      - name: Verify Xcode Version
+        run: xcodebuild -version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -20,10 +26,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci || npm install
-
-      - name: Setup CocoaPods
-        run: |
-          sudo gem install cocoapods
 
       - name: Generate iOS native project (Prebuild)
         run: npx expo prebuild --platform ios --clean
@@ -35,11 +37,11 @@ jobs:
       - name: Build Xcode Workspace without code signing
         run: |
           xcodebuild \
-            -workspace ios/tikholife.xcworkspace \
-            -scheme tikholife \
+            -workspace ios/Tiho.xcworkspace \
+            -scheme Tiho \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath build/tikho.xcarchive \
+            -archivePath build/Tiho.xcarchive \
             archive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -50,9 +52,9 @@ jobs:
       - name: Package .app into IPA
         run: |
           mkdir -p build/Payload
-          cp -r build/tikho.xcarchive/Products/Applications/*.app build/Payload/
+          cp -r build/Tiho.xcarchive/Products/Applications/*.app build/Payload/
           cd build
-          zip -r Tikho.ipa Payload
+          zip -r -y Tikho.ipa Payload
           cd ..
 
       - name: Upload IPA Artifact
